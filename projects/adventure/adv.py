@@ -1,7 +1,7 @@
 from room import Room
 from player import Player
 from world import World
-from util import Stack
+from util import Stack, Queue
 
 import random
 from ast import literal_eval
@@ -93,11 +93,44 @@ while len(visited_rooms) < len(room_graph):
                 # is used to make player travel
                 player.travel(next_direction)
                 traversal_path.append(next_direction)
+    # We've hit a dead end, so now we need to use bfs to turn around
+    # and find the next room with an unexplored exit
+    q = Queue()
+    # get all exits in the current room
+    exits = player.current_room.get_exits()
+    # add all exits to the queue
+    # note we add a tuple containing the room object as well
+    # as the direction that the room is in
+    for e in exits:
+        next_room = player.current_room.get_room_in_direction(e)
+        q.enqueue((e, next_room))
+    # loop through queue and break if
+    # the queue is empty or if we've found an unexplored exit
+    while q.size() and ("?" not in exits):
+        curr_tuple = q.dequeue()
+        # destructure the room object and the room direction from
+        # dequeued tuple
+        curr_room = curr_tuple[1]
+        curr_direction = curr_tuple[0]
+
+        # travel to the dequeued direction
+        # and this direction to our travel path list
+        player.travel(curr_direction)
+        traversal_path.append(curr_direction)
+
+        # get the exits for the dequeued room object
+        # (this is the reason that we included our room obj in the tuple)
+        exits = curr_room.get_exits()
+        # iterate over the exit list and get the room objects for each
+        # enqueue a tuple of each room object and direction for the next iteration
+        for e in exits:
+            next_room = curr_room.get_room_in_direction(e)
+            q.enqueue((e, next_room))
 
 
-for move in traversal_path:
-    player.travel(move)
-    visited_rooms.add(player.current_room)
+# for move in traversal_path:
+#     player.travel(move)
+#     visited_rooms.add(player.current_room)
 
 
 if len(visited_rooms) == len(room_graph):
