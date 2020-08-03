@@ -14,8 +14,8 @@ world = World()
 # map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
 # map_file = "maps/test_loop.txt"
-map_file = "maps/test_loop_fork.txt"
-# map_file = "maps/main_maze.txt"
+# map_file = "maps/test_loop_fork.txt"
+map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph = literal_eval(open(map_file, "r").read())
@@ -37,7 +37,6 @@ player.current_room = world.starting_room
 
 adjacency_graph = {}
 opposites = {"n": "s", "e": "w", "s": "n", "w": "e"}
-dft_visited = []
 while len(visited_rooms) < len(room_graph):
 
     # creating stack for dft
@@ -137,20 +136,28 @@ while len(visited_rooms) < len(room_graph):
                 new_path.append((next_room.id, next_room))
                 qq.enqueue(new_path)
     path_back = path[1:]
-    print("path_back after bfs loop", path_back)
+    # print("path_back after bfs loop", path_back)
     room_ids = [x[0] for x in path_back]
     print("player.current_room.id ||", player.current_room.id)
-    print("room_ids after bfs loop", room_ids)
-
-    directions_to_unexplored_room = []
+    print("directions to next unexplored room after bfs loop", room_ids)
 
     for room_id in room_ids:
         exit_directions = player.current_room.get_exits()
+        print("available directions |", exit_directions)
         for direction in exit_directions:
             next_room = player.current_room.get_room_in_direction(direction)
-            if next_room.id == room_id:
-                player.travel(direction)
-                traversal_path.append(direction)
+            print("next_room.id |||", next_room.id)
+
+            if next_room.id is not None:
+                print(
+                    f"next_room.id `{next_room.id}` ||| direction `{direction}` ||| room_id `{room_id}`")
+                if next_room.id == room_id:
+                    print(f"travelling {direction} to {room_id}")
+                    player.travel(direction)
+                    traversal_path.append(direction)
+                    break
+    print("len(visited_rooms)", len(visited_rooms))
+    print("len(room_graph)", len(room_graph))
 
 
 if len(visited_rooms) == len(room_graph):
