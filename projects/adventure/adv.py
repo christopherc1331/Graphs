@@ -14,8 +14,8 @@ world = World()
 # map_file = "maps/test_line.txt"
 # map_file = "maps/test_cross.txt"
 # map_file = "maps/test_loop.txt"
-# map_file = "maps/test_loop_fork.txt"
-map_file = "maps/main_maze.txt"
+map_file = "maps/test_loop_fork.txt"
+# map_file = "maps/main_maze.txt"
 
 # Loads the map into a dictionary
 room_graph = literal_eval(open(map_file, "r").read())
@@ -37,6 +37,7 @@ player.current_room = world.starting_room
 
 adjacency_graph = {}
 opposites = {"n": "s", "e": "w", "s": "n", "w": "e"}
+dft_visited = []
 while len(visited_rooms) < len(room_graph):
 
     # creating stack for dft
@@ -47,7 +48,7 @@ while len(visited_rooms) < len(room_graph):
     while s.size():
         current_room = s.pop()
         exits = current_room.get_exits()
-        # print("current_room", current_room)
+        print("current_room", current_room)
         if current_room not in visited_rooms:
             # checking if current room is in visited
             # adding current room to visited set if not
@@ -98,50 +99,59 @@ while len(visited_rooms) < len(room_graph):
                 # print("traversal_path after moving", traversal_path)
     # We've hit a dead end, so now we need to use bfs to turn around
     # and find the next room with an unexplored exit
-    # q = Queue()
-    # bfs_visited = set()
-    # path = [player.current_room]
-    # q.enqueue(path)
-    unexplored_exit_count = 0
-    back_pedal_count = -1
-    back_pedal_path = []
-    while (unexplored_exit_count == 0) and (len(visited_rooms) < len(room_graph)):
+    room_before_bfs = player.current_room
+    qq = Queue()
+    qq.enqueue([(player.current_room.id, player.current_room)])
+    bfs_visited = set()
+    found = False
+    path = []
+    while (qq.size() > 0) and (found == False) and (len(visited_rooms) < len(room_graph)):
+        path = qq.dequeue()
+        path_id = path[-1][0]
+        path_room = path[-1][1]
 
-        # current_path = q.dequeue()
+        if path[-1] not in bfs_visited:
+            # DO THE THING!!!
+            if path_id not in adjacency_graph:
+                found = True
+                break
+            else:
+                exits = adjacency_graph[path_id]
+                exit_tuples = exits.items()
+                for tup in exit_tuples:
+                    if tup[1] == "?":
+                        found = True
+                        break
+            if found == True:
+                break
+            # DONE DOING THE THING!!!
 
-        # current_room = current_path[-1]
+            # mark as visited
+            bfs_visited.add(path[-1])
 
-        current_exits = player.current_room.get_exits()
+            exits = path_room.get_exits()
+            for direction in exits:
+                next_room = path_room.get_room_in_direction(direction)
 
-        # print("current_exits", current_exits)
-        for exit in current_exits:
-            if adjacency_graph[player.current_room.id][exit] == "?":
-                unexplored_exit_count += 1
+                new_path = list(path)
+                new_path.append((next_room.id, next_room))
+                qq.enqueue(new_path)
+    path_back = path[1:]
+    print("path_back after bfs loop", path_back)
+    room_ids = [x[0] for x in path_back]
+    print("player.current_room.id ||", player.current_room.id)
+    print("room_ids after bfs loop", room_ids)
 
-        if unexplored_exit_count == 0:
-            # print("traversal_path", traversal_path)
-            # print("traversal_path[back_pedal_count]",
-            #   traversal_path[back_pedal_count])
-            next_direction = traversal_path[back_pedal_count]
-            # print("BEFORE player.current_room.id", player.current_room.id)
-            opposite_direction = opposites[next_direction]
-            # print(f"moving {opposite_direction} from {player.current_room.id}")
-            player.travel(opposite_direction)
-            back_pedal_path.append(opposite_direction)
-            # print("AFTER player.current_room.id", player.current_room.id)
-            back_pedal_count -= 1
+    directions_to_unexplored_room = []
 
-            #     if current_room not in bfs_visited:
-            #         bfs_visited.add(current_room.id)
+    for room_id in room_ids:
+        exit_directions = player.current_room.get_exits()
+        for direction in exit_directions:
+            next_room = player.current_room.get_room_in_direction(direction)
+            if next_room.id == room_id:
+                player.travel(direction)
+                traversal_path.append(direction)
 
-            #     for exit in current_exits:
-            #         exit_path = current_path.copy()
-            #         exit_path.append(exit)
-            #         new_room = current_room.get_room_in_direction(exit)
-            # for move in traversal_path:
-            #     player.travel(move)
-            #     visited_rooms.add(player.current_room)
-    traversal_path.extend(back_pedal_path)
 
 if len(visited_rooms) == len(room_graph):
     print(
